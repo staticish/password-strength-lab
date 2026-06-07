@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Password Strength Lab</title>
+<style>
+  :root{--bg:#0b1016;--card:#121a24;--line:#1f2c3a;--fg:#e6eef5;--dim:#8aa0b4;--g:#3fe08f;--y:#ffc24b;--o:#ff8c42;--r:#ff5c6c;--c:#46d3ff;--acc:#7c8bff}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--fg);font-family:"SF Mono",ui-monospace,Consolas,monospace;line-height:1.5;
+    background-image:radial-gradient(circle at 15% 0%,rgba(124,139,255,.08),transparent 40%)}
+  .wrap{max-width:920px;margin:0 auto;padding:28px 18px 80px}
+  .top{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .top h1{font-size:24px;font-weight:800}.top .ic{font-size:26px}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:24px}
+  .back{color:var(--c);text-decoration:none;font-size:13px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}
+  label{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:700}
+  .pwbox{display:flex;gap:10px;margin-top:8px}
+  input[type=text],input[type=password]{flex:1;background:#0a0f15;border:1.5px solid var(--line);border-radius:10px;color:#fff;font:inherit;font-size:18px;padding:13px 15px}
+  input:focus{outline:none;border-color:var(--acc)}
+  button{background:#1a2634;border:1px solid var(--line);color:var(--fg);font:inherit;border-radius:10px;padding:0 16px;cursor:pointer}
+  button:hover{border-color:var(--acc);color:#fff}
+  .meter{height:12px;background:#0a0f15;border-radius:8px;overflow:hidden;margin:18px 0 6px;border:1px solid var(--line)}
+  .meter i{display:block;height:100%;width:0;transition:width .3s,background .3s;border-radius:8px}
+  .verdict{display:flex;justify-content:space-between;align-items:baseline;font-weight:800;font-size:18px}
+  .verdict .bits{font-size:13px;color:var(--dim);font-weight:600}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:680px){.grid{grid-template-columns:1fr}}
+  .stat{background:#0e1620;border:1px solid var(--line);border-radius:10px;padding:13px 15px}
+  .stat .k{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+  .stat .v{font-size:19px;font-weight:800;margin-top:3px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+  td{padding:8px 6px;border-bottom:1px solid var(--line)}td:last-child{text-align:right;color:var(--dim)}
+  .flag{margin:7px 0;padding:9px 12px;border-radius:9px;font-size:13.5px;border-left:3px solid}
+  .flag.bad{background:rgba(255,92,108,.08);border-color:var(--r)}
+  .flag.warn{background:rgba(255,194,75,.08);border-color:var(--y)}
+  .flag.good{background:rgba(63,224,143,.08);border-color:var(--g)}
+  h3{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+  .gen{font-size:20px;color:var(--g);word-break:break-all;background:#0a0f15;border:1px dashed var(--line);border-radius:10px;padding:14px;margin:10px 0}
+  .note{font-size:13.5px;color:var(--dim);line-height:1.75}
+  .note b{color:var(--fg)}.note code{background:#0a0f15;padding:1px 6px;border-radius:4px;color:var(--c)}
+  .pillrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .pill{font-size:12px;border:1px solid var(--line);border-radius:20px;padding:5px 12px;color:var(--dim);cursor:pointer}
+  .pill:hover{border-color:var(--acc);color:#fff}
+  .priv{font-size:12px;color:var(--g);margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← all projects</a>
+  <div class="top"><span class="ic">🔐</span><h1>Password Strength Lab</h1></div>
+  <div class="sub">See exactly how strong a password is — and <i>why</i> — the way an attacker (and a defender) would measure it.</div>
+
+  <div class="card">
+    <label>Type or paste a password to analyse</label>
+    <div class="pwbox">
+      <input id="pw" type="text" placeholder="try: Summer2024!  vs  correct-horse-battery-staple" autocomplete="off" spellcheck="false">
+      <button id="toggle">👁</button>
+    </div>
+    <div class="meter"><i id="bar"></i></div>
+    <div class="verdict"><span id="label">—</span><span class="bits" id="bits"></span></div>
+    <div class="pillrow">
+      <span class="pill" data-t="Summer2024!">Summer2024!</span>
+      <span class="pill" data-t="P@ssw0rd">P@ssw0rd</span>
+      <span class="pill" data-t="qwerty12345">qwerty12345</span>
+      <span class="pill" data-t="Tr0ub4dor&3">Tr0ub4dor&amp;3</span>
+      <span class="pill" data-t="brisk-otter-vivid-lamp-92">brisk-otter-vivid-lamp-92</span>
+    </div>
+    <div class="priv">🔒 Everything runs in your browser. Nothing is sent anywhere.</div>
+  </div>
+
+  <div class="card">
+    <div class="grid" id="stats"></div>
+  </div>
+
+  <div class="card">
+    <h3>Estimated time to crack (offline guessing)</h3>
+    <table id="crack"></table>
+    <h3 style="margin-top:18px">Weaknesses detected</h3>
+    <div id="flags"></div>
+  </div>
+
+  <div class="card">
+    <h3>Generate a strong passphrase</h3>
+    <div class="gen" id="gen">click generate →</div>
+    <button id="genBtn" style="padding:11px 18px">⚙ Generate</button>
+    <button id="copyBtn" style="padding:11px 18px">📋 Copy</button>
+    <div class="note" style="margin-top:12px">Built from <b>4 random words + a number</b> using <code>crypto.getRandomValues</code> (a cryptographically secure RNG). Long + random beats short + complex.</div>
+  </div>
+
+  <div class="card">
+    <h3>📚 What you're learning</h3>
+    <div class="note">
+      <p><b>Entropy</b> measures unpredictability in <b>bits</b>: <code>bits = length × log₂(charset size)</code>. Each extra bit <i>doubles</i> the work to brute-force. ~28 bits = trivial, ~60 bits = decent, <b>80+ bits = strong</b>.</p>
+      <p style="margin-top:10px"><b>Why length wins:</b> adding one character multiplies the search space by the charset size; adding symbols only grows the base. That's why a long passphrase out-performs <code>P@ssw0rd</code>.</p>
+      <p style="margin-top:10px"><b>How attackers really crack:</b> they rarely brute-force blindly. They use <b>dictionaries</b>, <b>leetspeak rules</b> (a→@, o→0), <b>keyboard walks</b> (qwerty), and <b>breach lists</b> (rockyou.txt). This lab demotes any password matching those patterns — just like real cracking tools (hashcat, John).</p>
+      <p style="margin-top:10px"><b>Defender takeaways:</b> enforce length over complexity, block known-breached passwords, and always store passwords <b>salted + hashed</b> (bcrypt/argon2) — never plaintext.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const pw=document.getElementById('pw'),bar=document.getElementById('bar'),label=document.getElementById('label'),bits=document.getElementById('bits');
+const COMMON=["password","123456","123456789","qwerty","12345678","111111","letmein","admin","welcome","monkey","dragon","abc123","iloveyou","sunshine","princess","football","summer","winter","master","superman","trustno1","hello","login","starwars","passw0rd"];
+const SEQS=["0123456789","abcdefghijklmnopqrstuvwxyz","qwertyuiop","asdfghjkl","zxcvbnm"];
+
+function charset(p){let s=0;
+  if(/[a-z]/.test(p))s+=26; if(/[A-Z]/.test(p))s+=26; if(/[0-9]/.test(p))s+=10;
+  if(/[^a-zA-Z0-9]/.test(p))s+=33; return s||1;}
+
+function patterns(p){
+  const f=[]; const low=p.toLowerCase();
+  // un-leet for dictionary check
+  const deleet=low.replace(/@/g,'a').replace(/0/g,'o').replace(/1/g,'i').replace(/3/g,'e').replace(/\$/g,'s').replace(/5/g,'s').replace(/7/g,'t');
+  COMMON.forEach(w=>{ if(deleet.includes(w)) f.push(["bad",`Contains the breached word “${w}” — top crack-list material, even leet-spelled.`]); });
+  SEQS.forEach(s=>{ for(let i=0;i<s.length-3;i++){const run=s.slice(i,i+4); if(low.includes(run)) f.push(["warn",`Keyboard/sequence run “${run}” — guessed almost instantly.`]); } });
+  if(/(.)\1\1/.test(p)) f.push(["warn","Three+ repeated characters in a row."]);
+  if(/(19|20)\d\d/.test(p)) f.push(["warn","Contains a year — a classic, predictable suffix."]);
+  if(/^[A-Z][a-z]+[0-9]+[!@#$%^&*]?$/.test(p)) f.push(["warn","“Word + numbers + symbol” shape — the #1 pattern people use, so crackers try it first."]);
+  if(p.length<8 && p.length>0) f.push(["bad","Under 8 characters — too short regardless of complexity."]);
+  return f;
+}
+// penalise entropy when patterns/dictionary present (rough but realistic)
+function effectiveBits(p){
+  if(!p) return 0;
+  let raw=p.length*Math.log2(charset(p));
+  const f=patterns(p);
+  let penalty=0; f.forEach(x=>penalty+= x[0]==="bad"?22:9);
+  // common-word base: if it's basically a dictionary word, cap low
+  return Math.max(0, raw-penalty);
+}
+function crackTimes(bits){
+  const guesses=Math.pow(2,bits)/2; // average
+  const rates={ "Online throttled (10/s)":10,"Online unthrottled (1k/s)":1e3,"Leaked DB · GPU (10 B/s)":1e10,"Nation-state (100 T/s)":1e14 };
+  const out=[];
+  for(const k in rates){ out.push([k, human(guesses/rates[k])]); }
+  return out;
+}
+function human(sec){
+  if(sec<1)return"instant"; const u=[["second",1],["minute",60],["hour",3600],["day",86400],["year",31557600],["century",3.15576e9]];
+  let v=sec,name="seconds";
+  for(let i=u.length-1;i>=0;i--){ if(sec>=u[i][1]){ v=sec/u[i][1]; name=u[i][0]; break; } }
+  if(name==="century"&&v>1e6) return ">1 million centuries";
+  return v.toFixed(v<10?1:0)+" "+name+(v>=2?"s":"");
+}
+
+function render(){
+  const p=pw.value;
+  const eb=effectiveBits(p), cs=charset(p);
+  const pct=Math.min(100, eb/120*100);
+  bar.style.width=pct+"%";
+  let col,txt;
+  if(p.length===0){col="#1f2c3a";txt="—";}
+  else if(eb<28){col="var(--r)";txt="Very weak";}
+  else if(eb<45){col="var(--o)";txt="Weak";}
+  else if(eb<60){col="var(--y)";txt="Fair";}
+  else if(eb<80){col="var(--c)";txt="Strong";}
+  else{col="var(--g)";txt="Excellent";}
+  bar.style.background=col; label.textContent=txt; label.style.color=col;
+  bits.textContent=p?`${eb.toFixed(0)} bits of effective entropy`:"";
+  document.getElementById('stats').innerHTML=`
+   <div class="stat"><div class="k">Length</div><div class="v">${p.length}</div></div>
+   <div class="stat"><div class="k">Character pool</div><div class="v">${cs} symbols</div></div>
+   <div class="stat"><div class="k">Raw entropy</div><div class="v">${p?(p.length*Math.log2(cs)).toFixed(0):0} bits</div></div>
+   <div class="stat"><div class="k">After pattern penalty</div><div class="v" style="color:${col}">${eb.toFixed(0)} bits</div></div>`;
+  document.getElementById('crack').innerHTML=crackTimes(eb).map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("");
+  const f=patterns(p);
+  document.getElementById('flags').innerHTML = p.length===0?'<div class="note">Type a password above.</div>' :
+    (f.length? f.map(x=>`<div class="flag ${x[0]}">${x[1]}</div>`).join("") : '<div class="flag good">No obvious patterns — good. Now make sure it\'s unique to this site.</div>');
+}
+pw.addEventListener('input',render);
+document.getElementById('toggle').onclick=()=>{pw.type=pw.type==="text"?"password":"text";};
+document.querySelectorAll('.pill').forEach(b=>b.onclick=()=>{pw.value=b.dataset.t;render();});
+
+// passphrase generator (CSPRNG)
+const WORDS="amber anchor banjo bishop brisk cactus cedar cobalt copper crisp dapper ember falcon fjord gadget granite harbor ivory jasper kettle lantern lilac maple meadow nectar nimble onyx otter pebble pepper quartz quiver ripple saffron silver timber tonic umber velvet violet walnut willow zephyr zinc vivid lamp comet".split(" ");
+function rand(n){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n;}
+function passphrase(){const w=[];for(let i=0;i<4;i++)w.push(WORDS[rand(WORDS.length)]);return w.join("-")+"-"+(10+rand(90));}
+document.getElementById('genBtn').onclick=()=>{const g=passphrase();document.getElementById('gen').textContent=g;pw.value=g;render();};
+document.getElementById('copyBtn').onclick=()=>{const t=document.getElementById('gen').textContent;if(navigator.clipboard)navigator.clipboard.writeText(t);};
+render();
+</script>
+</body>
+</html>
